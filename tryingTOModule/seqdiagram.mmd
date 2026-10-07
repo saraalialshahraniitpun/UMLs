@@ -1,0 +1,23 @@
+sequenceDiagram
+    autonumber
+    actor user as User
+    participant ui as UI / System
+    participant order as Order
+    participant rest as Restaurant
+    participant history as orderHistory
+
+    user->>ui: selectItem() & send_order()
+    ui->>order: create_order()
+    order->>history: add_order(Order)
+    order->>rest: receive_order()
+    
+    Note over rest,order: معالجة الطلب في المطعم
+    rest->>order: changeStatus(Confirmed)
+    rest->>history: sending (OrderState)
+    rest->>order: changeStatus(Prepared)
+    rest->>history: sending (OrderState)
+    
+    rest->>order: changeStatus(Delivered)
+    order->>user: Notify_user()
+    user->>history: get_order_history()
+    history-->>user: view_details(tracking_number)
