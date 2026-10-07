@@ -1,34 +1,54 @@
 sequenceDiagram
     autonumber
-    actor User as user
-    participant Rest as Restaurant
-    participant Ord as Order
-    participant State as OrderState
-    participant Hist as orderHistory
+    actor user as user
+    participant Restaurant as Restaurant
+    participant Menu as Menu
+    participant Order as Order
+    participant OrderState as OrderState
+    participant orderHistory as orderHistory
 
-    User->>Rest: viewing Menu (items, price, offers)
-    User->>Ord: selectItem() & send_order()
-    Ord->>Rest: receive_order()
+    user->>Restaurant: viewing restaurant
+    Restaurant-->>user: load menu
+    user->>Menu: show items, price and offers
+    user->>Menu: selectItem()
+    Menu->>Order: send_items
+    Order->>Order: grouping_items()
+    Order->>Menu: get price and offers of selected items
+    Menu-->>Order: price and offers
+    Order->>Order: sub_total()
+    Order-->>user: show sub_total
     
-    alt Order is Rejected by Restaurant
-        Rest->>Ord: changeStatus() [Rejected]
-        Ord->>State: setState(Rejected)
-        Ord->>Hist: add_order(Order)
-        Ord->>User: Notify_user() (Order Cancelled/Rejected)
-    else Order is Accepted
-        Rest->>Ord: confirmed_order()
-        Ord->>State: setState(Confirmed)
-        Ord->>Hist: add_order(Order)
+    user->>Order: send_order()
+    Order->>Order: create_order()
+    Order->>Restaurant: forward order
+    Restaurant->>Order: receive_order()
+    
+    alt Restaurant accepts the order
+        Restaurant->>Order: confirmed_order()
+        Order->>OrderState: setState(Confirmed)
+        Order->>orderHistory: add_order(Order)
+        Order->>Order: update_order_status("confirmed")
+        Order->>Order: changeStatus()
+        Order->>user: Notify_user("order confirmed")
         
-        Note over Rest, Ord: Preparation & Delivery Flow
-        Rest->>Ord: update_order_status() [Prepared]
-        Ord->>State: next(Order) -> Prepared
+        Note over Restaurant, Order: Preparation & Delivery
+        Restaurant->>Order: update_order_status("prepared")
+        Order->>OrderState: next(Order) -> Prepared
+        Order->>orderHistory: sending (OrderState)
         
-        Rest->>Ord: update_order_status() [Delivered]
-        Ord->>State: next(Order) -> Delivered
-        
-        Ord->>User: Notify_user()
+        Restaurant->>Order: update_order_status("delivered")
+        Order->>OrderState: next(Order) -> Delivered
+        Order->>orderHistory: sending (OrderState)
+        Order->>user: Notify_user("order delivered")
+
+    else Restaurant rejects the order
+        Restaurant->>Order: update_order_status("rejected")
+        Order->>OrderState: setState(Rejected)
+        Order->>orderHistory: add_order(Order)
+        Order->>Order: changeStatus()
+        Order->>user: Notify_user("order rejected")
     end
 
-    User->>Hist: get_order_history()
-    Hist-->>User: view_details(tracking_number)
+    user->>orderHistory: track_order_number()
+    orderHistory->>Order: request status (tracking_number)
+    Order-->>user: status / view_details(tracking_number)
