@@ -1,23 +1,34 @@
 sequenceDiagram
     autonumber
-    actor user as User
-    participant ui as UI / System
-    participant order as Order
-    participant rest as Restaurant
-    participant history as orderHistory
+    actor User as user
+    participant Rest as Restaurant
+    participant Ord as Order
+    participant State as OrderState
+    participant Hist as orderHistory
 
-    user->>ui: selectItem() & send_order()
-    ui->>order: create_order()
-    order->>history: add_order(Order)
-    order->>rest: receive_order()
+    User->>Rest: viewing Menu (items, price, offers)
+    User->>Ord: selectItem() & send_order()
+    Ord->>Rest: receive_order()
     
-    Note over rest,order: معالجة الطلب في المطعم
-    rest->>order: changeStatus(Confirmed)
-    rest->>history: sending (OrderState)
-    rest->>order: changeStatus(Prepared)
-    rest->>history: sending (OrderState)
-    
-    rest->>order: changeStatus(Delivered)
-    order->>user: Notify_user()
-    user->>history: get_order_history()
-    history-->>user: view_details(tracking_number)
+    alt Order is Rejected by Restaurant
+        Rest->>Ord: changeStatus() [Rejected]
+        Ord->>State: setState(Rejected)
+        Ord->>Hist: add_order(Order)
+        Ord->>User: Notify_user() (Order Cancelled/Rejected)
+    else Order is Accepted
+        Rest->>Ord: confirmed_order()
+        Ord->>State: setState(Confirmed)
+        Ord->>Hist: add_order(Order)
+        
+        Note over Rest, Ord: Preparation & Delivery Flow
+        Rest->>Ord: update_order_status() [Prepared]
+        Ord->>State: next(Order) -> Prepared
+        
+        Rest->>Ord: update_order_status() [Delivered]
+        Ord->>State: next(Order) -> Delivered
+        
+        Ord->>User: Notify_user()
+    end
+
+    User->>Hist: get_order_history()
+    Hist-->>User: view_details(tracking_number)
