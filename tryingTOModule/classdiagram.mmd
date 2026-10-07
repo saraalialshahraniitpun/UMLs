@@ -37,6 +37,50 @@ direction TB
         +Notify_user()
     }
 
-    class orderHistory {
-"classdiagram.mmd" 86L, 1798B 
+    class orderHistory { 
+ -int user_id
+        -list past_orders
+        -str order_stutes_history
+        +add_order(Order order)
+        +get_order_history()
+        +get_history_path(OrderState final)
+        +view_details(int tracking_number)
+    }
 
+    class OrderState {
+        +str get_name
+        +get_tracking_number(int tracking_number)
+        +next(Order order)
+        +current()
+        +final()
+    }
+
+    class Created {
+        +next(Order order)
+    }
+
+    class Confirmed {
+        +next(Order order)
+    }
+
+    class Prepared {
+        +next(Order order)
+    }
+
+    class Delivered {
+        +next(Order order)
+    }
+
+    user "1" o-- "*" Order : places
+Restaurant "1" --> "*" Order : accepting
+Restaurant "1" * -- "*" Menu : has
+user "*" --> "*" Restaurant : viewing
+Order "*" --> "1.." Menu : contains
+user "1" --> "1" orderHistory : has  
+orderHistory "1" o-- "*" Order : contains
+    Order "1" --> "1" OrderState : state
+    OrderState <|-- Created
+    OrderState <|-- Confirmed
+    OrderState <|-- Prepared
+    OrderState <|-- Delivered
+orderHistory "1" o-- "*" OrderState : sending
